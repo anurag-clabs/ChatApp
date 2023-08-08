@@ -3,6 +3,9 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import LoginScreen from '../screens/loginScreen/LoginScreen';
 import SignUpScreen from '../screens/signUpScreen/SignUpScreen';
+import MainScreen from '../screens/mainScreen/MainScreen';
+import SplashScreen from '../screens/spleshScreen/SplashScreen';
+import ChatScreen from '../screens/ChatScreen/ChatScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -11,9 +14,12 @@ const StackNavigation = () => {
     <NavigationContainer>
       <Stack.Navigator
         screenOptions={{headerShown: false}}
-        initialRouteName="SignUp">
-        <Stack.Screen name="SignUp" component={SignUpScreen} />
+        initialRouteName="Splash">
+        <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="SignUp" component={SignUpScreen} />
+        <Stack.Screen name="Main" component={MainScreen} />
+        <Stack.Screen name="Chat" component={ChatScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
