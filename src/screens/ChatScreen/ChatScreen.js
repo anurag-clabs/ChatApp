@@ -4,6 +4,7 @@ import {Bubble, GiftedChat, InputToolbar, Send} from 'react-native-gifted-chat';
 import {useRoute} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import firestore from '@react-native-firebase/firestore';
+import storage from '@react-native-firebase/storage';
 import uuid from 'react-native-uuid';
 import {ms, s, vs} from 'react-native-size-matters';
 import {images} from '../../assets/image';
@@ -21,22 +22,51 @@ const Chat = ({navigation}) => {
         height: 400,
         cropping: true,
       });
-      const imageMessage = {
-        _id: uuid.v4(),
-        createdAt: new Date(),
-        image: {
-          uri: image.path, // Set the image URI
+
+      const imageUri = image.path;
+
+      // Generate a unique filename for the image
+      const imageFileName = uuid.v4();
+
+      // Create a reference to Firebase Storage
+      const storageRef = storage().ref(`images/${imageFileName}`);
+
+      // Upload the image
+      const task = storageRef.putFile(imageUri);
+
+      task.on(
+        'state_changed',
+        snapshot => {
+          // You can monitor upload progress here if needed
         },
-        user: {
-          _id: route.params.id,
+        error => {
+          console.error('Image upload error:', error);
         },
-      };
-      onSend([imageMessage]);
-      console.log('Selected image:', image);
+        async () => {
+          // Image uploaded successfully, get the download URL
+          const downloadURL = await storageRef.getDownloadURL();
+
+          // Create the image message
+          const imageMessage = {
+            _id: uuid.v4(),
+            createdAt: new Date(),
+            image: {
+              uri: downloadURL,
+            },
+            user: {
+              _id: route.params.id,
+            },
+          };
+
+          // Send the image message
+          onSend([imageMessage]);
+        },
+      );
     } catch (error) {
       console.log('Image picker error:', error);
     }
   };
+
   useEffect(() => {
     const subscriber = firestore()
       .collection('chats')
