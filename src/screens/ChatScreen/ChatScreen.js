@@ -1,18 +1,20 @@
-import {View, Text, TouchableOpacity, Image} from 'react-native';
+import {View, Text, TouchableOpacity, Image, Modal, Alert} from 'react-native';
 import React, {useCallback, useEffect, useState} from 'react';
 import {Bubble, GiftedChat, InputToolbar, Send} from 'react-native-gifted-chat';
 import {useRoute} from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
 import uuid from 'react-native-uuid';
-import {ms, s, vs} from 'react-native-size-matters';
 import {images} from '../../assets/image';
 import {styles} from './styles';
 import ImagePicker from 'react-native-image-crop-picker';
+import RNFetchBlob from 'rn-fetch-blob';
+import {s, vs} from 'react-native-size-matters';
 
 const Chat = ({navigation}) => {
   const [messageList, setMessageList] = useState([]);
+  const [showImage, setShowImage] = useState(false);
+  const [selectedImageURL, setSelectedImageURL] = useState('');
   const route = useRoute();
 
   const handleImage = async () => {
@@ -24,29 +26,23 @@ const Chat = ({navigation}) => {
       });
 
       const imageUri = image.path;
-
-      // Generate a unique filename for the image
       const imageFileName = uuid.v4();
-
-      // Create a reference to Firebase Storage
       const storageRef = storage().ref(`images/${imageFileName}`);
-
-      // Upload the image
       const task = storageRef.putFile(imageUri);
 
       task.on(
         'state_changed',
         snapshot => {
-          // You can monitor upload progress here if needed
+          const progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log('Upload is ' + progress + '% done');
         },
         error => {
           console.error('Image upload error:', error);
         },
         async () => {
-          // Image uploaded successfully, get the download URL
           const downloadURL = await storageRef.getDownloadURL();
 
-          // Create the image message
           const imageMessage = {
             _id: uuid.v4(),
             createdAt: new Date(),
@@ -58,7 +54,6 @@ const Chat = ({navigation}) => {
             },
           };
 
-          // Send the image message
           onSend([imageMessage]);
         },
       );
@@ -67,6 +62,33 @@ const Chat = ({navigation}) => {
     }
   };
 
+  const downloadImageToGallery = async () => {
+    try {
+      const resp = await RNFetchBlob.config({
+        fileCache: true,
+        appendExt: 'jpg',
+      }).fetch('GET', selectedImageURL);
+      setShowImage(false);
+
+      const base64Data = await resp.readFile('base64');
+      const {dirs} = RNFetchBlob.fs;
+      const timestamp = Date.now();
+      const galleryPath = `${dirs.DownloadDir}/downloaded_image_${timestamp}.jpg`;
+
+      await RNFetchBlob.fs.writeFile(galleryPath, base64Data, 'base64');
+
+      RNFetchBlob.fs.scanFile([{path: galleryPath, mime: 'image/jpeg'}]);
+      Alert.alert('Download', 'Image downloaded successfully!');
+      console.log('Image downloaded successfully:', resp.path());
+    } catch (error) {
+      console.log('Image download error:', error);
+    }
+  };
+
+  const handleImagePress = imageURL => {
+    setSelectedImageURL(imageURL);
+    setShowImage(true);
+  };
   useEffect(() => {
     const subscriber = firestore()
       .collection('chats')
@@ -86,20 +108,23 @@ const Chat = ({navigation}) => {
     const msg = messages[0];
     let myMsg = null;
     if (msg.text) {
-      myMsg = {
-        ...msg,
-        sendBy: route.params.id,
-        sendTo: route.params.data.useId,
-        createdAt: Date.parse(msg.createdAt),
-      };
-    } else if (msg.image) {
       const imageUri = msg.image.uri;
       myMsg = {
         ...msg,
         sendBy: route.params.id,
         sendTo: route.params.data.useId,
         createdAt: Date.parse(msg.createdAt),
-        image: imageUri, // Update the image field with the image URL
+        image: imageUri,
+      };
+    } else if (msg.image) {
+      const imageUri = msg.image.uri;
+      console.log('Image URI:', imageUri);
+      myMsg = {
+        ...msg,
+        sendBy: route.params.id,
+        sendTo: route.params.data.useId,
+        createdAt: Date.parse(msg.createdAt),
+        image: imageUri,
       };
     }
 
@@ -113,6 +138,7 @@ const Chat = ({navigation}) => {
         .doc('' + route.params.id + route.params.data.useId)
         .collection('messages')
         .add(myMsg);
+      downloadImageToGallery(msg.image.uri);
       firestore()
         .collection('chats')
         .doc('' + route.params.data.useId + route.params.id)
@@ -121,9 +147,64 @@ const Chat = ({navigation}) => {
     }
   }, []);
 
+  const renderMessageImage = props => {
+    return (
+      <TouchableOpacity
+        onLongPress={() => handleImagePress(props?.currentMessage.image)}>
+        <Image
+          style={{width: 170, height: 150}}
+          source={{uri: props?.currentMessage.image}}
+        />
+      </TouchableOpacity>
+    );
+  };
+  const renderSend = props => {
+    return (
+      <View style={styles.imageView}>
+        <TouchableOpacity
+          onPress={() => {
+            alert('attach clicked');
+          }}>
+          <Image source={images.attach} style={styles.attach} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {
+            alert('attach mic');
+          }}>
+          <Image source={images.voice} style={styles.image} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleImage}>
+          <Image source={images.image} style={styles.image} />
+        </TouchableOpacity>
+        <Send {...props} containerStyle={{justifyContent: 'center'}}>
+          <Image source={images.send} style={styles.send} />
+        </Send>
+      </View>
+    );
+  };
+
+  const renderInputToolbar = props => {
+    return (
+      <InputToolbar
+        {...props}
+        containerStyle={{
+          borderRadius: 10,
+          backgroundColor: 'white',
+          borderTopColor: 'transparent',
+        }}
+      />
+    );
+  };
+
+  const renderBubble = props => {
+    return (
+      <Bubble {...props} wrapperStyle={{left: {backgroundColor: '#DEEBFF'}}} />
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <View style={{marginTop: vs(10)}}>
+      <View style={styles.header}>
         <TouchableOpacity
           style={styles.menuView}
           onPress={() => navigation.goBack()}>
@@ -131,6 +212,26 @@ const Chat = ({navigation}) => {
         </TouchableOpacity>
         <Text style={styles.menuTitle}>Chat</Text>
       </View>
+      {showImage && (
+        <Modal animationType="slide" transparent={true} visible={showImage}>
+          <View style={styles.imagePopup}>
+            <TouchableOpacity onPress={() => setShowImage(false)}>
+              <Image
+                style={{
+                  width: s(200),
+                  height: vs(150),
+                }}
+                source={{uri: selectedImageURL}}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.buttonView}
+              onPress={downloadImageToGallery}>
+              <Text style={styles.buttonText}>Download</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+      )}
       <GiftedChat
         messages={messageList}
         onSend={messages => onSend(messages)}
@@ -138,50 +239,10 @@ const Chat = ({navigation}) => {
           _id: route.params.id,
         }}
         alwaysShowSend
-        renderSend={props => {
-          return (
-            <View style={styles.imageView}>
-              <TouchableOpacity
-                onPress={() => {
-                  alert('attach clicked');
-                }}>
-                <Image source={images.attach} style={styles.attach} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  alert('attach mic');
-                }}>
-                <Image source={images.voice} style={styles.image} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleImage}>
-                <Image source={images.image} style={styles.image} />
-              </TouchableOpacity>
-              <Send {...props} containerStyle={{justifyContent: 'center'}}>
-                <Image source={images.send} style={styles.send} />
-              </Send>
-            </View>
-          );
-        }}
-        renderInputToolbar={props => {
-          return (
-            <InputToolbar
-              {...props}
-              containerStyle={{
-                borderRadius: 10,
-                backgroundColor: 'white',
-                borderTopColor: 'transparent',
-              }}
-            />
-          );
-        }}
-        renderBubble={props => {
-          return (
-            <Bubble
-              {...props}
-              wrapperStyle={{left: {backgroundColor: '#DEEBFF'}}}
-            />
-          );
-        }}
+        renderMessageImage={renderMessageImage}
+        renderSend={renderSend}
+        renderInputToolbar={renderInputToolbar}
+        renderBubble={renderBubble}
       />
     </View>
   );

@@ -1,9 +1,14 @@
-import {StyleSheet} from 'react-native';
+import {Platform, StyleSheet} from 'react-native';
 import {ms, s, vs} from 'react-native-size-matters';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  header: {
+    marginTop: vs(10),
+    width: '100%',
+    height: vs(45),
   },
   menuView: {
     zIndex: 1,
@@ -49,5 +54,25 @@ export const styles = StyleSheet.create({
     height: ms(30),
     marginRight: s(5),
     resizeMode: 'contain',
+  },
+  imagePopup: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.72)',
+  },
+  buttonView: {
+    height: ms(60),
+    width: '50%',
+    backgroundColor: '#007AFE',
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: vs(30),
+  },
+  buttonText: {
+    fontSize: 18,
+    color: 'white',
+    lineHeight: 30,
   },
 });
