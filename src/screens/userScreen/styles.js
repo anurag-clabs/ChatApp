@@ -46,6 +46,11 @@ export const styles = StyleSheet.create({
     color: '#000',
     marginLeft: 20,
     fontSize: 20,
-    marginTop: 10,
+    marginTop: 5,
+  },
+  email: {
+    color: '#778899',
+    marginLeft: 20,
+    fontSize: 16,
   },
 });

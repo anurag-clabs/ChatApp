@@ -66,7 +66,10 @@ const UserScreen = () => {
               }}>
               <View style={{flexDirection: 'row'}}>
                 <Image source={images.user} style={styles.userIcon} />
-                <Text style={styles.name}>{item.name}</Text>
+                <View style={{flexDirection: 'column'}}>
+                  <Text style={styles.name}>{item.name}</Text>
+                  <Text style={styles.email}>{item.email}</Text>
+                </View>
               </View>
             </TouchableOpacity>
           );
