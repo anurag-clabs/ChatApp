@@ -13,6 +13,7 @@ import {s, vs} from 'react-native-size-matters';
 
 const Chat = ({navigation}) => {
   const [messageList, setMessageList] = useState([]);
+  console.log('messageList', messageList);
   const [showImage, setShowImage] = useState(false);
   const [selectedImageURL, setSelectedImageURL] = useState('');
   const route = useRoute();
@@ -107,18 +108,17 @@ const Chat = ({navigation}) => {
   const onSend = useCallback(async (messages = []) => {
     const msg = messages[0];
     let myMsg = null;
-    if (msg.text) {
-      const imageUri = msg.image.uri;
+    if (msg?.text?.length) {
+      const text = msg.text;
       myMsg = {
         ...msg,
         sendBy: route.params.id,
         sendTo: route.params.data.useId,
         createdAt: Date.parse(msg.createdAt),
-        image: imageUri,
+        text: text,
       };
-    } else if (msg.image) {
-      const imageUri = msg.image.uri;
-      console.log('Image URI:', imageUri);
+    } else if (msg?.image?.uri?.length) {
+      const imageUri = msg?.image?.uri;
       myMsg = {
         ...msg,
         sendBy: route.params.id,
@@ -138,7 +138,7 @@ const Chat = ({navigation}) => {
         .doc('' + route.params.id + route.params.data.useId)
         .collection('messages')
         .add(myMsg);
-      downloadImageToGallery(msg.image.uri);
+      downloadImageToGallery(msg?.image?.uri);
       firestore()
         .collection('chats')
         .doc('' + route.params.data.useId + route.params.id)
