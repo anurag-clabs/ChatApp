@@ -1,4 +1,12 @@
-import {View, Text, TouchableOpacity, Image, Modal, Alert} from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  Modal,
+  Alert,
+  LogBox,
+} from 'react-native';
 import React, {useCallback, useEffect, useState} from 'react';
 import {Bubble, GiftedChat, InputToolbar, Send} from 'react-native-gifted-chat';
 import {useRoute} from '@react-navigation/native';
@@ -10,6 +18,7 @@ import {styles} from './styles';
 import ImagePicker from 'react-native-image-crop-picker';
 import RNFetchBlob from 'rn-fetch-blob';
 import {s, vs} from 'react-native-size-matters';
+LogBox.ignoreLogs(['Require cycle:']);
 
 const Chat = ({navigation}) => {
   const [messageList, setMessageList] = useState([]);
@@ -102,7 +111,7 @@ const Chat = ({navigation}) => {
       });
       setMessageList(allmessages);
     });
-    return () => subscriber();
+    // return () => subscriber();
   }, []);
 
   const onSend = useCallback(async (messages = []) => {
