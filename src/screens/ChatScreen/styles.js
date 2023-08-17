@@ -1,4 +1,4 @@
-import {Platform, StyleSheet} from 'react-native';
+import {StyleSheet} from 'react-native';
 import {ms, s, vs} from 'react-native-size-matters';
 
 export const styles = StyleSheet.create({
@@ -61,9 +61,16 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.72)',
   },
+  VideoPopup: {
+    flex: 1,
+    justifyContent: 'center',
+    alignSelf: 'center',
+    // alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.72)',
+  },
   buttonView: {
     height: ms(60),
-    width: '50%',
+    width: '30%',
     backgroundColor: '#007AFE',
     borderRadius: 15,
     justifyContent: 'center',
@@ -71,8 +78,14 @@ export const styles = StyleSheet.create({
     marginVertical: vs(30),
   },
   buttonText: {
-    fontSize: 18,
+    fontSize: 15,
     color: 'white',
     lineHeight: 30,
+  },
+  videoButton: {
+    width: ms(20),
+    height: ms(20),
+    // marginRight: s(5),
+    resizeMode: 'contain',
   },
 });

@@ -18,14 +18,61 @@ import {styles} from './styles';
 import ImagePicker from 'react-native-image-crop-picker';
 import RNFetchBlob from 'rn-fetch-blob';
 import {s, vs} from 'react-native-size-matters';
+import Video from 'react-native-video';
 LogBox.ignoreLogs(['Require cycle:']);
 
 const Chat = ({navigation}) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [messageList, setMessageList] = useState([]);
-  console.log('messageList', messageList);
   const [showImage, setShowImage] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
   const [selectedImageURL, setSelectedImageURL] = useState('');
+  const [selectedVideoURL, setSelectedVideoURL] = useState('');
   const route = useRoute();
+
+  const handleVideo = async () => {
+    try {
+      const video = await ImagePicker.openPicker({
+        mediaType: 'video',
+      });
+
+      const videoUri = video.path;
+      const videoFileName = uuid.v4();
+      const storageRef = storage().ref(`videos/${videoFileName}`);
+      const task = storageRef.putFile(videoUri);
+
+      task.on(
+        'state_changed',
+        snapshot => {
+          const progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log('Upload is ' + progress + '% done');
+        },
+        error => {
+          console.error('Video upload error:', error);
+        },
+        async () => {
+          const downloadURL = await storageRef.getDownloadURL();
+
+          const videoMessage = {
+            _id: uuid.v4(),
+            createdAt: new Date(),
+            video: {
+              uri: downloadURL,
+            },
+            user: {
+              _id: route.params.id,
+            },
+          };
+
+          onSend([videoMessage]);
+        },
+      );
+    } catch (error) {
+      console.log('Video picker error:', error);
+    }
+  };
 
   const handleImage = async () => {
     try {
@@ -88,16 +135,43 @@ const Chat = ({navigation}) => {
       await RNFetchBlob.fs.writeFile(galleryPath, base64Data, 'base64');
 
       RNFetchBlob.fs.scanFile([{path: galleryPath, mime: 'image/jpeg'}]);
-      Alert.alert('Download', 'Image downloaded successfully!');
       console.log('Image downloaded successfully:', resp.path());
     } catch (error) {
       console.log('Image download error:', error);
     }
   };
 
+  const downloadVideoToGallery = async () => {
+    try {
+      const resp = await RNFetchBlob.config({
+        fileCache: true,
+        appendExt: 'mp4',
+      }).fetch('GET', selectedVideoURL);
+      setShowVideo(false);
+
+      const base64Data = await resp.readFile('base64');
+      const {dirs} = RNFetchBlob.fs;
+      const timestamp = Date.now();
+      const galleryPath = `${dirs.DownloadDir}/downloaded_video_${timestamp}.MOV`;
+
+      await RNFetchBlob.fs.writeFile(galleryPath, base64Data, 'base64');
+
+      RNFetchBlob.fs.scanFile([{path: galleryPath, mime: 'video/mp4'}]);
+      console.log('Video downloaded successfully:', resp.path());
+    } catch (error) {
+      console.log('Video download error:', error);
+    }
+  };
+
   const handleImagePress = imageURL => {
     setSelectedImageURL(imageURL);
     setShowImage(true);
+  };
+  const handleVideoPress = videoURL => {
+    setSelectedVideoURL(videoURL);
+    setShowVideo(true);
+    setIsPlaying(p => !p);
+    setIsMuted(m => !m);
   };
   useEffect(() => {
     const subscriber = firestore()
@@ -135,6 +209,15 @@ const Chat = ({navigation}) => {
         createdAt: Date.parse(msg.createdAt),
         image: imageUri,
       };
+    } else if (msg?.video?.uri?.length) {
+      const videoUri = msg?.video?.uri;
+      myMsg = {
+        ...msg,
+        sendBy: route.params.id,
+        sendTo: route.params.data.useId,
+        createdAt: Date.parse(msg.createdAt),
+        video: videoUri,
+      };
     }
 
     if (myMsg) {
@@ -167,13 +250,25 @@ const Chat = ({navigation}) => {
       </TouchableOpacity>
     );
   };
+  const renderMessageVideo = props => {
+    return (
+      <TouchableOpacity
+        onLongPress={() => handleVideoPress(props?.currentMessage.video)}>
+        <Video
+          style={{width: s(235), height: vs(150)}} // Replace with your video component
+          source={{uri: props?.currentMessage.video}}
+          paused={!isPlaying}
+          controls={true}
+          muted={isMuted}
+          repeat={false}
+        />
+      </TouchableOpacity>
+    );
+  };
   const renderSend = props => {
     return (
       <View style={styles.imageView}>
-        <TouchableOpacity
-          onPress={() => {
-            alert('attach clicked');
-          }}>
+        <TouchableOpacity onPress={handleVideo}>
           <Image source={images.attach} style={styles.attach} />
         </TouchableOpacity>
         <TouchableOpacity
@@ -241,6 +336,33 @@ const Chat = ({navigation}) => {
           </View>
         </Modal>
       )}
+      {showVideo && (
+        <Modal animationType="slide" transparent={true} visible={showVideo}>
+          <View style={styles.VideoPopup}>
+            <Video
+              style={{
+                width: s(340),
+                height: vs(550),
+                alignSelf: 'center',
+              }}
+              source={{uri: selectedVideoURL}}
+            />
+            <View
+              style={{flexDirection: 'row', justifyContent: 'space-evenly'}}>
+              <TouchableOpacity
+                style={styles.buttonView}
+                onPress={downloadVideoToGallery}>
+                <Text style={styles.buttonText}>Download</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.buttonView}
+                onPress={() => setShowVideo(false)}>
+                <Text style={styles.buttonText}>Back</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
       <GiftedChat
         messages={messageList}
         onSend={messages => onSend(messages)}
@@ -249,6 +371,7 @@ const Chat = ({navigation}) => {
         }}
         alwaysShowSend
         renderMessageImage={renderMessageImage}
+        renderMessageVideo={renderMessageVideo}
         renderSend={renderSend}
         renderInputToolbar={renderInputToolbar}
         renderBubble={renderBubble}
