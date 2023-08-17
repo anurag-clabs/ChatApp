@@ -244,7 +244,7 @@ const Chat = ({navigation}) => {
       <TouchableOpacity
         onLongPress={() => handleImagePress(props?.currentMessage.image)}>
         <Image
-          style={{width: 170, height: 150}}
+          style={{width: 170, height: 150, resizeMode: 'contain'}}
           source={{uri: props?.currentMessage.image}}
         />
       </TouchableOpacity>
@@ -255,7 +255,7 @@ const Chat = ({navigation}) => {
       <TouchableOpacity
         onLongPress={() => handleVideoPress(props?.currentMessage.video)}>
         <Video
-          style={{width: s(235), height: vs(150)}} // Replace with your video component
+          style={{width: s(235), height: vs(150)}}
           source={{uri: props?.currentMessage.video}}
           paused={!isPlaying}
           controls={true}
@@ -322,8 +322,9 @@ const Chat = ({navigation}) => {
             <TouchableOpacity onPress={() => setShowImage(false)}>
               <Image
                 style={{
-                  width: s(200),
-                  height: vs(150),
+                  width: s(300),
+                  height: vs(450),
+                  resizeMode: 'cover',
                 }}
                 source={{uri: selectedImageURL}}
               />
