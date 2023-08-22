@@ -62,7 +62,7 @@ const UserScreen = () => {
             <TouchableOpacity
               style={styles.userItem}
               onPress={() => {
-                navigation.navigate('Chat', {data: item, id: id});
+                navigation.navigate('Message', {data: item, id: id});
               }}>
               <View style={{flexDirection: 'row'}}>
                 <Image source={images.user} style={styles.userIcon} />
