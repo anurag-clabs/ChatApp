@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
-  LogBox,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
 import firestore from '@react-native-firebase/firestore';
@@ -98,7 +97,10 @@ const MessageScreen = ({navigation}) => {
                 borderBottomRightRadius: 10,
               },
             ]}>
-            <Text style={{color: '#fff'}}>{item.text}</Text>
+            <Text style={{color: '#ffff'}}>{item.text}</Text>
+            <Text style={styles.timestamp}>
+              {new Date(item.createdAt).toLocaleTimeString()}
+            </Text>
           </View>
         </View>
       </View>
@@ -109,7 +111,7 @@ const MessageScreen = ({navigation}) => {
     <View style={styles.container}>
       <FlatList
         data={messageList}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item._id}
         renderItem={renderItem}
         inverted={true}
       />

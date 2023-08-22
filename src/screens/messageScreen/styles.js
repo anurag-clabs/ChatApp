@@ -133,4 +133,9 @@ export const styles = StyleSheet.create({
   messageBubble: {
     padding: 10,
   },
+  timestamp: {
+    fontSize: 12,
+    color: '#dcdcdc',
+    marginTop: 5,
+  },
 });
