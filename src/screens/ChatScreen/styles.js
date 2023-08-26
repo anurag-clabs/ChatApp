@@ -4,11 +4,20 @@ import {ms, s, vs} from 'react-native-size-matters';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   header: {
     marginTop: vs(10),
     width: '100%',
     height: vs(45),
+  },
+  messageBubble: {
+    padding: 10,
+  },
+  timestamp: {
+    fontSize: 12,
+    color: '#dcdcdc',
+    marginTop: 5,
   },
   menuView: {
     zIndex: 1,
@@ -50,9 +59,12 @@ export const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   send: {
-    width: ms(30),
-    height: ms(30),
-    marginRight: s(5),
+    width: ms(25),
+    height: ms(25),
+    // marginTop: vs(10),
+    // alignSelf: 'center',
+    alignItems: 'center',
+    // marginRight: s(5),
     resizeMode: 'contain',
   },
   imagePopup: {
@@ -77,6 +89,17 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: vs(30),
   },
+  sectionStyle: {
+    height: vs(50),
+    width: '90%',
+    marginTop: vs(20),
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F4F4F4',
+    borderRadius: 10,
+    marginBottom: 10,
+  },
   buttonText: {
     fontSize: 15,
     color: 'white',
@@ -87,5 +110,33 @@ export const styles = StyleSheet.create({
     height: ms(20),
     // marginRight: s(5),
     resizeMode: 'contain',
+  },
+  imageStyle: {
+    height: ms(22),
+    width: ms(22),
+    resizeMode: 'contain',
+    marginRight: s(5),
+  },
+  inputStyle: {
+    paddingLeft: s(10),
+    width: '65%',
+    color: '#000',
+    height: vs(50),
+    lineHeight: 25,
+  },
+  flexStart: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginTop: 10,
+    alignSelf: 'flex-start',
+  },
+  flexEnd: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginTop: 10,
+    alignSelf: 'flex-end',
+  },
+  messageContainer: {
+    maxWidth: '80%',
   },
 });

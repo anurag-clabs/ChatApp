@@ -12,6 +12,9 @@ import {styles} from './styles';
 import {images} from '../../assets/image';
 import {s} from 'react-native-size-matters';
 import {useRoute} from '@react-navigation/native';
+import ImagePicker from 'react-native-image-crop-picker';
+import storage from '@react-native-firebase/storage';
+import uuid from 'react-native-uuid';
 
 const MessageScreen = ({navigation}) => {
   const [messageList, setMessageList] = useState([]);
@@ -46,8 +49,16 @@ const MessageScreen = ({navigation}) => {
         sendTo: route.params.data.useId,
         createdAt: Date.parse(msg.createdAt),
       };
+    } else if (msg?.image?.uri?.length) {
+      const imageUri = msg?.image?.uri;
+      myMsg = {
+        ...msg,
+        sendBy: route.params.id,
+        sendTo: route.params.data.useId,
+        createdAt: Date.parse(msg.createdAt),
+        image: imageUri,
+      };
     }
-
     firestore()
       .collection('chats')
       .doc(`${route.params.id}${route.params.data.useId}`)
@@ -74,10 +85,65 @@ const MessageScreen = ({navigation}) => {
           _id: route?.params?.id,
         },
       };
-      sendMessage([Message, route.params.data.useId]);
-      setMessageList(prevMessages => [...prevMessages, Message]);
+      console.log('Message=====>', Message);
+      sendMessage(Message);
+
       setInputMessage('');
     }
+  };
+
+  const handleSendImage = async () => {
+    try {
+      const selectedImage = await ImagePicker.openPicker({
+        width: 300,
+        height: 400,
+        cropping: true,
+      });
+
+      const imageUri = selectedImage.path;
+      const imageFileName = uuid.v4();
+      const storageRef = storage().ref(`images/${imageFileName}`);
+      const task = storageRef.putFile(imageUri);
+
+      task.on(
+        'state_changed',
+        snapshot => {
+          const progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log('Upload is ' + progress + '% done');
+        },
+        error => {
+          console.error('Image upload error:', error);
+        },
+        async () => {
+          const downloadURL = await storageRef.getDownloadURL();
+
+          const ImageMessage = {
+            _id: `${Date.now()}`,
+            image: downloadURL,
+            createdAt: new Date(),
+            user: {
+              _id: route?.params?.id,
+            },
+          };
+          console.log('ImageMessage=====>', ImageMessage);
+          sendMessage(ImageMessage); // Send only the ImageMessage object
+
+          setMessageList(prevMessages => [...prevMessages, ImageMessage]);
+          setInputMessage('');
+        },
+      );
+    } catch (error) {
+      console.log('Image picker error:', error);
+    }
+  };
+
+  const formatTime1 = date => {
+    const d = new Date(date);
+    const hours = d.getHours() % 12 || 12;
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const ampm = d.getHours() >= 12 ? 'PM' : 'AM';
+    return `${hours}:${minutes} ${ampm}`;
   };
 
   const renderItem = ({item}) => {
@@ -97,10 +163,14 @@ const MessageScreen = ({navigation}) => {
                 borderBottomRightRadius: 10,
               },
             ]}>
-            <Text style={{color: '#ffff'}}>{item.text}</Text>
-            <Text style={styles.timestamp}>
-              {new Date(item.createdAt).toLocaleTimeString()}
-            </Text>
+            {item.text && <Text style={{color: '#ffff'}}>{item.text}</Text>}
+            {item.image && (
+              <Image
+                source={{uri: item.image}}
+                style={{width: 200, height: 150, borderRadius: 10}}
+              />
+            )}
+            <Text style={styles.timestamp}>{formatTime1(item.createdAt)}</Text>
           </View>
         </View>
       </View>
@@ -127,7 +197,7 @@ const MessageScreen = ({navigation}) => {
           <TouchableOpacity onPress={null}>
             <Image style={styles.attach} source={images.attach} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={null}>
+          <TouchableOpacity onPress={handleSendImage}>
             <Image style={styles.imageStyle} source={images.image} />
           </TouchableOpacity>
           <TouchableOpacity onPress={null}>

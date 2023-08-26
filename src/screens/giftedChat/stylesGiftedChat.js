@@ -138,11 +138,4 @@ export const styles = StyleSheet.create({
     color: '#dcdcdc',
     marginTop: 5,
   },
-  sentImage: {
-    width: s(200),
-    height: vs(150),
-    resizeMode: 'cover',
-    borderRadius: 10,
-    marginVertical: 5,
-  },
 });

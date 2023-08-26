@@ -20,7 +20,7 @@ const StackNavigation = () => {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="Main" component={MainScreen} />
-        <Stack.Screen name="Message" component={MessageScreen} />
+        <Stack.Screen name="Message" component={ChatScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

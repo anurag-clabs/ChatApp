@@ -6,11 +6,9 @@ import {
   Modal,
   Alert,
   LogBox,
-  FlatList,
-  TextInput,
 } from 'react-native';
 import React, {useCallback, useEffect, useState} from 'react';
-import {GiftedChat} from 'react-native-gifted-chat';
+import {Bubble, GiftedChat, InputToolbar, Send} from 'react-native-gifted-chat';
 import {useRoute} from '@react-navigation/native';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
@@ -31,7 +29,6 @@ const Chat = ({navigation}) => {
   const [showVideo, setShowVideo] = useState(false);
   const [selectedImageURL, setSelectedImageURL] = useState('');
   const [selectedVideoURL, setSelectedVideoURL] = useState('');
-  const [inputMessage, setInputMessage] = useState('');
   const route = useRoute();
 
   const handleVideo = async () => {
@@ -70,7 +67,6 @@ const Chat = ({navigation}) => {
           };
 
           onSend([videoMessage]);
-          setInputMessage('');
         },
       );
     } catch (error) {
@@ -224,93 +220,89 @@ const Chat = ({navigation}) => {
       };
     }
 
-    // if (myMsg) {
-    //   setMessageList(previousMessages =>
-    //     GiftedChat.append(previousMessages, myMsg),
-    //   );
+    if (myMsg) {
+      setMessageList(previousMessages =>
+        GiftedChat.append(previousMessages, myMsg),
+      );
 
-    firestore()
-      .collection('chats')
-      .doc('' + route.params.id + route.params.data.useId)
-      .collection('messages')
-      .add(myMsg);
-    downloadImageToGallery(msg?.image?.uri);
-    firestore()
-      .collection('chats')
-      .doc('' + route.params.data.useId + route.params.id)
-      .collection('messages')
-      .add(myMsg);
-    // }
+      firestore()
+        .collection('chats')
+        .doc('' + route.params.id + route.params.data.useId)
+        .collection('messages')
+        .add(myMsg);
+      downloadImageToGallery(msg?.image?.uri);
+      firestore()
+        .collection('chats')
+        .doc('' + route.params.data.useId + route.params.id)
+        .collection('messages')
+        .add(myMsg);
+    }
   }, []);
 
-  const handleSendMessage = () => {
-    if (inputMessage.trim() !== '') {
-      // Check if the input message is not empty
-      const newMessage = {
-        _id: uuid.v4(),
-        createdAt: new Date(),
-        text: inputMessage,
-        user: {
-          _id: route.params.id,
-        },
-      };
-      onSend([newMessage]);
-      setInputMessage('');
-    }
-  };
-
-  const formatTime1 = date => {
-    const d = new Date(date);
-    const hours = d.getHours() % 12 || 12;
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    const ampm = d.getHours() >= 12 ? 'PM' : 'AM';
-    return `${hours}:${minutes} ${ampm}`;
-  };
-
-  const renderItem = ({item, props}) => {
-    const isCurrentUser = route?.params?.id === item.user._id;
-
+  const renderMessageImage = props => {
     return (
-      <View style={isCurrentUser ? styles.flexEnd : styles.flexStart}>
-        <View style={styles.messageContainer}>
-          <View
-            style={[
-              styles.messageBubble,
-              {
-                backgroundColor: isCurrentUser ? '#396f0e' : '#545454',
-                borderTopLeftRadius: isCurrentUser ? 15 : 2,
-                borderTopRightRadius: isCurrentUser ? 2 : 15,
-                borderBottomLeftRadius: 10,
-                borderBottomRightRadius: 10,
-              },
-            ]}>
-            {item.text && <Text style={{color: '#ffff'}}>{item.text}</Text>}
-            {item.image && (
-              <TouchableOpacity
-                onLongPress={() => handleImagePress(item.image)}>
-                <Image
-                  source={{uri: item.image}}
-                  style={{width: 200, height: 150, borderRadius: 10}}
-                />
-              </TouchableOpacity>
-            )}
-            {item.video && (
-              <TouchableOpacity
-                onLongPress={() => handleVideoPress(item.video)}>
-                <Video
-                  style={{width: s(180), height: vs(150)}}
-                  source={{uri: item.video}}
-                  paused={!isPlaying}
-                  controls={true}
-                  muted={isMuted}
-                  repeat={false}
-                />
-              </TouchableOpacity>
-            )}
-            <Text style={styles.timestamp}>{formatTime1(item.createdAt)}</Text>
-          </View>
-        </View>
+      <TouchableOpacity
+        onLongPress={() => handleImagePress(props?.currentMessage.image)}>
+        <Image
+          style={{width: 170, height: 150, resizeMode: 'contain'}}
+          source={{uri: props?.currentMessage.image}}
+        />
+      </TouchableOpacity>
+    );
+  };
+  const renderMessageVideo = props => {
+    return (
+      <TouchableOpacity
+        onLongPress={() => handleVideoPress(props?.currentMessage.video)}>
+        <Video
+          style={{width: s(235), height: vs(150)}}
+          source={{uri: props?.currentMessage.video}}
+          paused={!isPlaying}
+          controls={true}
+          muted={isMuted}
+          repeat={false}
+        />
+      </TouchableOpacity>
+    );
+  };
+  const renderSend = props => {
+    return (
+      <View style={styles.imageView}>
+        <TouchableOpacity onPress={handleVideo}>
+          <Image source={images.attach} style={styles.attach} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {
+            alert('attach mic');
+          }}>
+          <Image source={images.voice} style={styles.image} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleImage}>
+          <Image source={images.image} style={styles.image} />
+        </TouchableOpacity>
+        <Send {...props} containerStyle={{justifyContent: 'center'}}>
+          <Image source={images.send} style={styles.send} />
+        </Send>
       </View>
+    );
+  };
+
+  const renderInputToolbar = props => {
+    return (
+      <InputToolbar
+        {...props}
+        containerStyle={{
+          borderRadius: 10,
+          backgroundColor: 'white',
+          borderTopColor: 'transparent',
+        }}
+      />
+    );
+  };
+
+  const renderBubble = props => {
+    return (
+      <Bubble {...props} wrapperStyle={{left: {backgroundColor: '#DEEBFF'}}} />
     );
   };
 
@@ -372,35 +364,19 @@ const Chat = ({navigation}) => {
           </View>
         </Modal>
       )}
-      <FlatList
-        data={messageList}
-        renderItem={renderItem}
-        keyExtractor={item => item._id}
-        inverted={true}
+      <GiftedChat
+        messages={messageList}
+        onSend={messages => onSend(messages)}
+        user={{
+          _id: route.params.id,
+        }}
+        alwaysShowSend
+        renderMessageImage={renderMessageImage}
+        renderMessageVideo={renderMessageVideo}
+        renderSend={renderSend}
+        renderInputToolbar={renderInputToolbar}
+        renderBubble={renderBubble}
       />
-      <View style={styles.sectionStyle}>
-        <TextInput
-          placeholderTextColor="#666666"
-          value={inputMessage}
-          onChangeText={text => setInputMessage(text)}
-          placeholder="Type a message..."
-          style={styles.inputStyle}
-        />
-        <View style={{position: 'absolute', right: s(5), flexDirection: 'row'}}>
-          <TouchableOpacity onPress={handleVideo}>
-            <Image style={styles.attach} source={images.attach} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleImage}>
-            <Image style={styles.imageStyle} source={images.image} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={null}>
-            <Image style={styles.imageStyle} source={images.voice} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleSendMessage}>
-            <Image style={styles.send} source={images.send} />
-          </TouchableOpacity>
-        </View>
-      </View>
     </View>
   );
 };
