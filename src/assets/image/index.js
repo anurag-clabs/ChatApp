@@ -11,4 +11,6 @@ export const images = {
   stop: require('./stop/stop-button.png'),
   UnMute: require('./UnMute/speaker-filled-audio-tool.png'),
   Mute: require('./Mute/volume-off-indicator.png'),
+  stopButton: require('./stopButton/stop-button(1).png'),
+  sendAudio: require('./sendAudio/sendAudio.png'),
 };
